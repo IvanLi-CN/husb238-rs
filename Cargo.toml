@@ -1,0 +1,37 @@
+[package]
+name = "husb238"
+version = "0.0.0"
+authors = ["Ivan Li <ivanli2048@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "A SW3526 driver based on [embedded-hal](https://crates.io/crates/embedded-hal). Support `async` and `sync` features."
+keywords = ["embedded", "embedded-hal-driver", "no-std", "pd", "i2c", "husb238", "async"]
+repository = "https://github.com/IvanLi-CN/husb238-rs"
+
+[dependencies]
+log = { version = "0.4.22" }
+
+embedded-hal = "1.0.0"
+embedded-hal-async = { version = "1.0.0", optional = true }
+maybe-async-cfg = "0.2.3"
+
+[dev-dependencies]
+tokio = { version = "1.40.0", features = [] }
+embedded-hal-mock = "0.11.1"
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = 0
+
+[profile.release]
+codegen-units = 1        # LLVM can perform better optimizations using a single thread
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false
+
+[features]
+async = ["dep:embedded-hal-async"]
