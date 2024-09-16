@@ -203,6 +203,45 @@ where
         Self { i2c }
     }
 
+    /// Get voltage and current from PD_STATUS0, in Volts and Amperes
+    /// Voltage will be None if not attached
+    pub async fn get_actual_voltage_and_current(&mut self) -> Result<(Option<f64>, f64), E> {
+        let (voltage, current) = self.get_pd_status0().await?;
+
+        let voltage = match voltage {
+            Voltage::_5v => Some(5.0),
+            Voltage::_9v => Some(9.0),
+            Voltage::_12v => Some(12.0),
+            Voltage::_15v => Some(15.0),
+            Voltage::_18v => Some(18.0),
+            Voltage::_20v => Some(20.0),
+            _ => None,
+        };
+
+        let current = match current {
+            Current::_0_5a => 0.5,
+            Current::_0_7a => 0.7,
+            Current::_1_0a => 1.0,
+            Current::_1_25a => 1.25,
+            Current::_1_5a => 1.5,
+            Current::_1_75a => 1.75,
+            Current::_2_0a => 2.0,
+            Current::_2_25a => 2.25,
+            Current::_2_5a => 2.5,
+            Current::_2_75a => 2.75,
+            Current::_3_0a => 3.0,
+            Current::_3_25a => 3.25,
+            Current::_3_5a => 3.5,
+            Current::_4_0a => 4.0,
+            Current::_4_5a => 4.5,
+            Current::_5_0a => 5.0,
+        };
+
+        Ok((voltage, current))
+    }
+
+    /// Get voltage and current from PD_STATUS0, in enum values
+    /// if you want numbers, use [Husb238::get_actual_voltage_and_current]
     pub async fn get_pd_status0(&mut self) -> Result<(Voltage, Current), E> {
         let mut buf = [0u8; 1];
 
