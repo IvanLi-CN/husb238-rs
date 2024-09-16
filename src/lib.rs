@@ -24,6 +24,49 @@ pub enum Register {
 
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
+pub enum Voltage {
+    Unattached = 0x00,
+    _5v = 0x10,
+    _9v = 0x20,
+    _12v = 0x30,
+    _15v = 0x40,
+    _18v = 0x50,
+    _20v = 0x60,
+    Reserved = 0x70, // placeholder for other reserved values
+}
+
+impl From<u8> for Voltage {
+    fn from(value: u8) -> Self {
+        match value {
+            0x00 => Voltage::Unattached,
+            0x10 => Voltage::_5v,
+            0x20 => Voltage::_9v,
+            0x30 => Voltage::_12v,
+            0x40 => Voltage::_15v,
+            0x50 => Voltage::_18v,
+            0x60 => Voltage::_20v,
+            _ => Voltage::Reserved,
+        }
+    }
+}
+
+impl<'a> Into<&'a str> for Voltage {
+    fn into(self) -> &'a str {
+        match self {
+            Voltage::Unattached => "Unattached",
+            Voltage::_5v => "5V",
+            Voltage::_9v => "9V",
+            Voltage::_12v => "12V",
+            Voltage::_15v => "15V",
+            Voltage::_18v => "18V",
+            Voltage::_20v => "20V",
+            Voltage::Reserved => "Reserved",
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum Current {
     _0_5a = 0x00,
     _0_7a = 0x01,
@@ -93,26 +136,26 @@ impl<'a> Into<&'a str> for Current {
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum SrcPdo {
-    Unattached = 0x00,
+    NotSelected = 0x00,
     _5v = 0x10,
     _9v = 0x20,
     _12v = 0x30,
-    _15v = 0x40,
-    _18v = 0x50,
-    _20v = 0x60,
-    Reserved = 0x70,
+    _15v = 0x80,
+    _18v = 0x90,
+    _20v = 0xa0,
+    Reserved = 0xf0, // placeholder for other reserved values
 }
 
 impl From<u8> for SrcPdo {
     fn from(value: u8) -> Self {
         match value {
-            0x00 => SrcPdo::Unattached,
+            0x00 => SrcPdo::NotSelected,
             0x10 => SrcPdo::_5v,
             0x20 => SrcPdo::_9v,
             0x30 => SrcPdo::_12v,
-            0x40 => SrcPdo::_15v,
-            0x50 => SrcPdo::_18v,
-            0x60 => SrcPdo::_20v,
+            0x80 => SrcPdo::_15v,
+            0x90 => SrcPdo::_18v,
+            0xa0 => SrcPdo::_20v,
             _ => SrcPdo::Reserved,
         }
     }
@@ -121,7 +164,7 @@ impl From<u8> for SrcPdo {
 impl<'a> Into<&'a str> for SrcPdo {
     fn into(self) -> &'a str {
         match self {
-            SrcPdo::Unattached => "Unattached",
+            SrcPdo::NotSelected => "NotSelected",
             SrcPdo::_5v => "5V",
             SrcPdo::_9v => "9V",
             SrcPdo::_12v => "12V",
@@ -134,6 +177,8 @@ impl<'a> Into<&'a str> for SrcPdo {
 }
 
 pub const SRC_PDO_MASK: u8 = 0xF0;
+pub const STATUS0_VOLTAGE_MASK: u8 = 0xF0;
+pub const STATUS0_CURRENT_MASK: u8 = 0x0F;
 
 #[repr(u8)]
 pub enum Command {
@@ -158,11 +203,26 @@ where
         Self { i2c }
     }
 
+    pub async fn get_pd_status0(&mut self) -> Result<(Voltage, Current), E> {
+        let mut buf = [0u8; 1];
+
+        self.i2c
+            .write_read(HUSB238_ADDR, &[Register::PdStatus0 as u8], &mut buf)
+            .await?;
+
+        Ok((
+            (buf[0] & STATUS0_VOLTAGE_MASK).into(),
+            (buf[0] & STATUS0_CURRENT_MASK).into(),
+        ))
+    }
+
     pub async fn get_src_pdo(&mut self) -> Result<SrcPdo, E> {
         let mut buf = [0u8; 1];
+
         self.i2c
             .write_read(HUSB238_ADDR, &[Register::SrcPdo as u8], &mut buf)
             .await?;
+
         Ok((buf[0] & SRC_PDO_MASK).into())
     }
 

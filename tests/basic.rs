@@ -48,6 +48,22 @@ mod tests {
     }
 
     #[test]
+    fn test_get_pd_status0() {
+        let expectations = [Transaction::write_read(
+            HUSB238_ADDR,
+            vec![Register::PdStatus0 as u8],
+            vec![0x58],
+        )];
+        let mut i2c = Mock::new(&expectations);
+        let mut husb238 = Husb238::new(i2c.clone());
+
+        let result = husb238.get_pd_status0().unwrap();
+        assert_eq!(result, (Voltage::_18v, Current::_2_5a));
+
+        i2c.done();
+    }
+
+    #[test]
     fn test_src_pdo_to_string() {
         let result: &str = SrcPdo::_9v.into();
         assert_eq!(result, "9V");
@@ -69,5 +85,17 @@ mod tests {
     fn test_current_to_string() {
         let result: &str = Current::_2_0a.into();
         assert_eq!(result, "2.0A");
+    }
+
+    #[test]
+    fn test_voltage_from_u8() {
+        let result: Voltage = 0x50.into();
+        assert_eq!(result, Voltage::_18v);
+    }
+
+    #[test]
+    fn test_voltage_to_string() {
+        let result: &str = Voltage::_18v.into();
+        assert_eq!(result, "18V");
     }
 }
