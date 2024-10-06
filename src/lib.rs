@@ -24,6 +24,7 @@ pub enum Register {
 
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Voltage {
     Unattached = 0x00,
     _5v = 0x10,
@@ -67,6 +68,7 @@ impl<'a> Into<&'a str> for Voltage {
 
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Current {
     _0_5a = 0x00,
     _0_7a = 0x01,
@@ -275,5 +277,49 @@ where
         self.i2c
             .write(HUSB238_ADDR, &[Register::GoCommand as u8, command as u8])
             .await
+    }
+
+    async fn get_detection_status(&mut self, src_pdo: Register) -> Result<Option<Current>, E> {
+        let mut buf = [0u8; 1];
+
+        self.i2c
+            .write_read(HUSB238_ADDR, &[src_pdo as u8], &mut buf)
+            .await?;
+
+        if buf[0] & 0x80 != 0 {
+            Ok(Some((buf[0] & 0x0f).into()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[inline(always)]
+    pub async fn get_5v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo5V).await
+    }
+
+    #[inline(always)]
+    pub async fn get_9v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo9V).await
+    }
+
+    #[inline(always)]
+    pub async fn get_12v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo12V).await
+    }
+
+    #[inline(always)]
+    pub async fn get_15v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo15V).await
+    }
+
+    #[inline(always)]
+    pub async fn get_18v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo18V).await
+    }
+
+    #[inline(always)]
+    pub async fn get_20v_status(&mut self) -> Result<Option<Current>, E> {
+        self.get_detection_status(Register::SrcPdo20V).await
     }
 }
