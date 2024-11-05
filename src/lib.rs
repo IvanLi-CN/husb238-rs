@@ -137,6 +137,7 @@ impl<'a> Into<&'a str> for Current {
 
 #[repr(u8)]
 #[derive(PartialEq, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SrcPdo {
     NotSelected = 0x00,
     _5v = 0x10,
